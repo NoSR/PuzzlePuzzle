@@ -10,14 +10,15 @@
 // 하드웨어 핀 정의
 // =============================================================================
 
-const uint8_t PIR_PINS[4] = {2, 3, 4, 5};
-const uint8_t CEILING_PINS[4] = {6, 7, 8, 9};
-const uint8_t EFFECT_PINS[6] = {22, 24, 26, 28, 30, 32};
+const uint8_t PIR_PINS[4] = {23, 25, 39, 41};
+const uint8_t CEILING_PINS[4] = {7, 6, 5, 4};
+#define EFFECT_LED_COUNT 8
+const uint8_t EFFECT_PINS[EFFECT_LED_COUNT] = {22, 24, 26, 28, 30, 32, 34, 36};
 
 #define GREEN_BEACON_PIN 10
 #define RED_BEACON_PIN 11
-#define DF_RX_PIN 12
-#define DF_TX_PIN 13
+#define DF_RX_PIN 3
+#define DF_TX_PIN 2
 
 // =============================================================================
 // 게임 상수
@@ -201,7 +202,7 @@ void initializePins() {
   digitalWrite(RED_BEACON_PIN, LOW);
 
   // 이펙트 LED 핀 설정
-  for (int i = 0; i < 6; i++) {
+  for (int i = 0; i < EFFECT_LED_COUNT; i++) {
     pinMode(EFFECT_PINS[i], OUTPUT);
     digitalWrite(EFFECT_PINS[i], LOW);
   }
@@ -528,11 +529,11 @@ void updateScoreLEDs() {
 
 void playErrorEffect() {
   for (int i = 0; i < 5; i++) {
-    for (int j = 0; j < 6; j++) {
+    for (int j = 0; j < EFFECT_LED_COUNT; j++) {
       digitalWrite(EFFECT_PINS[j], HIGH);
     }
     delay(200);
-    for (int j = 0; j < 6; j++) {
+    for (int j = 0; j < EFFECT_LED_COUNT; j++) {
       digitalWrite(EFFECT_PINS[j], LOW);
     }
     delay(200);
@@ -541,11 +542,11 @@ void playErrorEffect() {
 
 void playSuccessEffect() {
   for (int i = 0; i < 3; i++) {
-    for (int j = 0; j < 6; j++) {
+    for (int j = 0; j < EFFECT_LED_COUNT; j++) {
       digitalWrite(EFFECT_PINS[j], HIGH);
       delay(100);
     }
-    for (int j = 0; j < 6; j++) {
+    for (int j = 0; j < EFFECT_LED_COUNT; j++) {
       digitalWrite(EFFECT_PINS[j], LOW);
       delay(100);
     }

@@ -24,13 +24,13 @@ extern const uint8_t CEILING_PINS[CEILING_LIGHT_COUNT];
 #define BEACON_GREEN_PIN 10
 #define BEACON_RED_PIN 11
 
-// 이펙트 LED 핀 (6개)
-#define EFFECT_LED_COUNT 6
+// 이펙트 LED 핀 (8개)
+#define EFFECT_LED_COUNT 8
 extern const uint8_t EFFECT_PINS[EFFECT_LED_COUNT];
 
 // DFPlayer 핀
-#define DF_RX_PIN 12
-#define DF_TX_PIN 13
+#define DF_RX_PIN 3
+#define DF_TX_PIN 2
 
 // EM Lock 핀
 #define EM_LOCK_PIN 14
@@ -65,15 +65,15 @@ enum EffectPattern {
 };
 
 // 타이밍 상수
-#define LIGHT_SEQUENCE_INTERVAL 500    // 천정 조명 점등 간격 (ms)
-#define MOTION_DETECT_DURATION 5000    // 동작 감지 시간 (ms)
-#define PATTERN_DISPLAY_TIME 3000      // 패턴 표시 시간 (ms)
-#define INPUT_TIMEOUT 10000            // 입력 대기 시간 (ms)
-#define PHASE_TIMEOUT 30000            // 단계별 타임아웃 (ms)
+#define LIGHT_SEQUENCE_INTERVAL 500 // 천정 조명 점등 간격 (ms)
+#define MOTION_DETECT_DURATION 5000 // 동작 감지 시간 (ms)
+#define PATTERN_DISPLAY_TIME 3000   // 패턴 표시 시간 (ms)
+#define INPUT_TIMEOUT 10000         // 입력 대기 시간 (ms)
+#define PHASE_TIMEOUT 30000         // 단계별 타임아웃 (ms)
 
 // PIR 센서 상수
-#define PIR_DEBOUNCE_TIME 100          // 디바운싱 시간 (ms)
-#define PIR_TRIGGER_DURATION 2000      // 트리거 지속 시간 (ms)
+#define PIR_DEBOUNCE_TIME 100     // 디바운싱 시간 (ms)
+#define PIR_TRIGGER_DURATION 2000 // 트리거 지속 시간 (ms)
 
 // 오디오 트랙 번호
 #define AUDIO_GAME_START 10
