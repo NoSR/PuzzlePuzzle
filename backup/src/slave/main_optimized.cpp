@@ -453,6 +453,7 @@ bool checkInputSequence(uint8_t level) {
   
   // 패턴 비교
   for (int i = 0; i < expectedLength; i++) {
+    if (level < 1 || level > 6 || i >= 6) return false; // 배열 경계 검사
     if (vibrationState.inputSequence[i] != LEVEL_PATTERNS[level - 1][i]) {
       return false;
     }
@@ -677,6 +678,10 @@ void handleMasterCommand(uint8_t command, uint8_t data1, uint8_t data2) {
       
     case CMD_GET_INPUT:
       handleInputRequest();
+      break;
+      
+    default:
+      Serial.println("알 수 없는 명령어");
       break;
   }
 }

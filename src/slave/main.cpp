@@ -361,7 +361,7 @@ void monitorVibrationSensors() {
         }
       }
     } else if (reading <= VIBRATION_THRESHOLD &&
-               (vibrationState.padPressed & padMask)) {
+               (vibrationState.padPressed & padMask) != 0) {
       vibrationState.padPressed &= ~padMask;
     }
   }
@@ -391,6 +391,7 @@ bool checkInputSequence(uint8_t level) {
   }
 
   for (int i = 0; i < expectedLength; i++) {
+    if (level < 1 || level > 6 || i >= 6) return false; // 배열 경계 검사
     if (vibrationState.inputSequence[i] != LEVEL_PATTERNS[level - 1][i]) {
       return false;
     }
@@ -587,8 +588,8 @@ void monitorDigitalInputs() {
     for (int i = 0; i < DIGITAL_INPUT_COUNT + 2;
          i++) { // +2는 리미트 스위치 포함
       uint8_t bitMask = 1 << i;
-      bool currentBit = !(rawInput & bitMask); // 풀업이므로 반전
-      bool previousBit = digitalInputState.currentState & bitMask;
+      bool currentBit = (rawInput & bitMask) == 0; // 풀업이므로 반전
+      bool previousBit = (digitalInputState.currentState & bitMask) != 0;
 
       if (currentBit != previousBit) {
         if (i < DIGITAL_INPUT_COUNT + 2) {
@@ -717,6 +718,10 @@ void handleMasterCommand(uint8_t command, uint8_t data1, uint8_t data2) {
 
   case CMD_GET_INPUT:
     handleInputRequest();
+    break;
+
+  default:
+    Serial.println("알 수 없는 명령어");
     break;
   }
 }

@@ -414,6 +414,11 @@ void updateGameState() {
   case PHASE_GAME_CLEAR:
     handleGameClearPhase();
     break;
+
+  default:
+    Serial.println("알 수 없는 게임 단계");
+    transitionToPhase(PHASE_IDLE);
+    break;
   }
 }
 
@@ -633,6 +638,10 @@ void handleSlaveResponse(uint8_t response, uint8_t data1, uint8_t data2) {
 
   case RESP_INPUT_TIMEOUT:
     Serial.println("입력 시간 초과");
+    break;
+
+  default:
+    Serial.println("알 수 없는 응답");
     break;
   }
 }
