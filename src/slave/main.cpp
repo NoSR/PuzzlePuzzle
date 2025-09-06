@@ -41,6 +41,10 @@ const uint8_t VIBRATION_PINS[4] = {A0, A1, A2, A3};
 #define RESP_INPUT_CORRECT 0x31
 #define RESP_INPUT_WRONG 0x32
 #define RESP_INPUT_TIMEOUT 0x33
+#define RESP_START_BUTTON_PRESSED 0x40
+
+// 시작 버튼 설정
+#define START_BUTTON_BIT 2 // MCP23017 #1 GPIOB 2번 비트
 
 // =============================================================================
 // 전역 상태 변수들
@@ -94,11 +98,14 @@ bool checkInputSequence(uint8_t level);
 
 // LED 제어 함수들
 void setMCP23017Output(uint8_t addr, uint8_t reg, uint8_t value);
+uint8_t readMCP23017Input(uint8_t addr, uint8_t reg);
 void showLEDPattern(uint8_t level);
 void updateLEDPattern();
 void displayScore(uint8_t score);
 void startScoreBlinking(uint8_t score);
 void updateScoreLEDBlinking();
+void startClearDominoEffect();
+void updateClearDominoEffect();
 
 // DFPlayer 함수들
 void sendDFCommand(uint8_t cmd, uint8_t param1, uint8_t param2);
@@ -112,6 +119,15 @@ void sendResponseToMaster(uint8_t response);
 
 // 유틸리티 함수들
 uint8_t getPatternLengthForLevel(uint8_t level);
+
+// 디지털 입력 함수들
+void monitorDigitalInputs();
+bool readHeadLimitSwitch();
+bool readBodyLimitSwitch();
+bool readDigitalInput(uint8_t inputNumber);
+uint8_t readAllDigitalInputs();
+bool readStartButton();
+void checkStartButton();
 
 // 시리얼 명령 함수들
 void processSerialCommands();
@@ -143,6 +159,7 @@ void loop() {
   processMasterComm();
   monitorVibrationSensors();
   monitorDigitalInputs();
+  checkStartButton();
   updateLEDPattern();
   updateScoreLEDBlinking();
   updateClearDominoEffect();
@@ -391,7 +408,8 @@ bool checkInputSequence(uint8_t level) {
   }
 
   for (int i = 0; i < expectedLength; i++) {
-    if (level < 1 || level > 6 || i >= 6) return false; // 배열 경계 검사
+    if (level < 1 || level > 6 || i >= 6)
+      return false; // 배열 경계 검사
     if (vibrationState.inputSequence[i] != LEVEL_PATTERNS[level - 1][i]) {
       return false;
     }
@@ -630,6 +648,24 @@ uint8_t readAllDigitalInputs() {
          DIGITAL_INPUT_START_BIT;
 }
 
+bool readStartButton() {
+  return digitalInputState.currentState & (1 << START_BUTTON_BIT);
+}
+
+void checkStartButton() {
+  static bool lastStartButtonState = false;
+  bool currentStartButtonState = readStartButton();
+
+  // 버튼이 눌렸을 때 (LOW에서 HIGH로 변화, 풀업이므로 반전)
+  if (currentStartButtonState && !lastStartButtonState) {
+    Serial.println("시작 버튼 눌림 감지!");
+    sendResponseToMaster(RESP_START_BUTTON_PRESSED);
+    playEffectSound(SFX_LIGHT_ON); // 버튼 눌림 효과음
+  }
+
+  lastStartButtonState = currentStartButtonState;
+}
+
 // =============================================================================
 // DFPlayer 관련 함수들
 // =============================================================================
@@ -829,6 +865,8 @@ void printSystemStatus() {
   Serial.print(readHeadLimitSwitch());
   Serial.print(F(" BL:"));
   Serial.print(readBodyLimitSwitch());
+  Serial.print(F(" START:"));
+  Serial.print(readStartButton());
   Serial.print(F(" DI:0x"));
   Serial.println(readAllDigitalInputs(), HEX);
 }

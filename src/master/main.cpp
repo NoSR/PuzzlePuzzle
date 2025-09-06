@@ -57,6 +57,7 @@ enum GamePhase {
 #define RESP_INPUT_CORRECT 0x31
 #define RESP_INPUT_WRONG 0x32
 #define RESP_INPUT_TIMEOUT 0x33
+#define RESP_START_BUTTON_PRESSED 0x40
 
 // =============================================================================
 // 게임 상태 구조체
@@ -618,6 +619,10 @@ void processSlaveComm() {
 }
 
 void handleSlaveResponse(uint8_t response, uint8_t data1, uint8_t data2) {
+  // 사용하지 않는 매개변수 경고 억제
+  (void)data1;
+  (void)data2;
+
   switch (response) {
   case RESP_ROBOT_READY:
     Serial.println("로봇 회전 완료");
@@ -640,6 +645,15 @@ void handleSlaveResponse(uint8_t response, uint8_t data1, uint8_t data2) {
     Serial.println("입력 시간 초과");
     break;
 
+  case RESP_START_BUTTON_PRESSED:
+    Serial.println("=== 시작 버튼 눌림! 게임 시작 ===");
+    if (gameState.currentPhase == PHASE_IDLE) {
+      transitionToPhase(PHASE_GAME_START);
+    } else {
+      Serial.println("게임이 이미 진행 중입니다.");
+    }
+    break;
+
   default:
     Serial.println("알 수 없는 응답");
     break;
@@ -656,7 +670,13 @@ void processSerialCommands() {
     command.trim();
 
     if (command == "start") {
-      transitionToPhase(PHASE_GAME_START);
+      // 시리얼 명령으로도 게임 시작 가능 (테스트/디버깅용)
+      Serial.println("=== 시리얼 명령으로 게임 시작 ===");
+      if (gameState.currentPhase == PHASE_IDLE) {
+        transitionToPhase(PHASE_GAME_START);
+      } else {
+        Serial.println("게임이 이미 진행 중입니다.");
+      }
     } else if (command == "stop") {
       transitionToPhase(PHASE_IDLE);
     } else if (command == "status") {
