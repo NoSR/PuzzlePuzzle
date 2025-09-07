@@ -21,8 +21,8 @@
 
 const uint8_t VIBRATION_PINS[4] = {A0, A1, A2, A3};
 
-#define DF_RX_PIN 3
-#define DF_TX_PIN 2
+#define DF_RX_PIN 2
+#define DF_TX_PIN 3
 
 // =============================================================================
 // 통신 명령어 (헤더에 없는 것들만)
@@ -187,35 +187,41 @@ void initializePins() {
 }
 
 void initializeMCP23017() {
-  // MCP23017 #1 초기화
-  // GPIOA: 출력 (문제 제시 LED용)
+  Serial.println(F("MCP23017 초기화 시작..."));
+  
+  // 간단한 초기화로 변경
+  delay(100);
+  
+  // MCP23017 #1 기본 설정
   Wire.beginTransmission(MCP23017_1_ADDR);
   Wire.write(MCP_IODIRA);
-  Wire.write(0x00); // 모든 비트 출력
+  Wire.write(0x00); // GPIOA 출력
   Wire.endTransmission();
-
-  // GPIOB: 입력 (리미트 스위치 + 디지털 입력용)
+  delay(10);
+  
   Wire.beginTransmission(MCP23017_1_ADDR);
   Wire.write(MCP_IODIRB);
-  Wire.write(0xFF); // 모든 비트 입력
+  Wire.write(0xFF); // GPIOB 입력
   Wire.endTransmission();
-
-  // GPIOB 풀업 활성화 (0x0D = GPPUB 레지스터)
+  delay(10);
+  
   Wire.beginTransmission(MCP23017_1_ADDR);
-  Wire.write(0x0D); // GPPUB 레지스터
-  Wire.write(0xFF); // 모든 비트 풀업 활성화
+  Wire.write(0x0D); // GPPUB
+  Wire.write(0xFF); // 풀업 활성화
   Wire.endTransmission();
-
-  // MCP23017 #2 초기화 (점수 LED용)
+  delay(10);
+  
+  // MCP23017 #2 기본 설정
   Wire.beginTransmission(MCP23017_2_ADDR);
   Wire.write(MCP_IODIRA);
-  Wire.write(0x00); // 모든 비트 출력
+  Wire.write(0x00); // GPIOA 출력
   Wire.endTransmission();
-
-  // 초기 상태 (모든 LED 끄기)
+  delay(10);
+  
+  // LED 끄기
   setMCP23017Output(MCP23017_1_ADDR, MCP_GPIOA, 0x00);
   setMCP23017Output(MCP23017_2_ADDR, MCP_GPIOA, 0x00);
-
+  
   Serial.println(F("MCP23017 초기화 완료"));
 }
 
@@ -426,18 +432,37 @@ void setMCP23017Output(uint8_t addr, uint8_t reg, uint8_t value) {
   Wire.beginTransmission(addr);
   Wire.write(reg);
   Wire.write(value);
-  Wire.endTransmission();
+  uint8_t error = Wire.endTransmission();
+  
+  if (error != 0) {
+    Serial.print(F("MCP 쓰기 오류 (0x"));
+    Serial.print(addr, HEX);
+    Serial.print(F(", reg:0x"));
+    Serial.print(reg, HEX);
+    Serial.print(F(", err:"));
+    Serial.print(error);
+    Serial.println(F(")"));
+  }
 }
 
 uint8_t readMCP23017Input(uint8_t addr, uint8_t reg) {
   Wire.beginTransmission(addr);
   Wire.write(reg);
-  Wire.endTransmission();
+  uint8_t error = Wire.endTransmission();
+  
+  if (error != 0) {
+    Serial.print(F("MCP 읽기 오류: "));
+    Serial.println(error);
+    return 0xFF;
+  }
 
   Wire.requestFrom(addr, (uint8_t)1);
   if (Wire.available()) {
-    return Wire.read();
+    uint8_t value = Wire.read();
+    return value;
   }
+  
+  Serial.println(F("MCP 데이터 없음"));
   return 0xFF; // 오류 시 모든 비트 HIGH 반환
 }
 
@@ -654,13 +679,20 @@ bool readStartButton() {
 
 void checkStartButton() {
   static bool lastStartButtonState = false;
+  static unsigned long lastCheckTime = 0;
+  
+  // 100ms마다 검사
+  if (millis() - lastCheckTime < 100) return;
+  lastCheckTime = millis();
+  
   bool currentStartButtonState = readStartButton();
 
-  // 버튼이 눌렸을 때 (LOW에서 HIGH로 변화, 풀업이므로 반전)
-  if (currentStartButtonState && !lastStartButtonState) {
+  // 버튼이 눌렸을 때 (HIGH에서 LOW로 변화, 풀업이므로 반전)
+  if (!currentStartButtonState && lastStartButtonState) {
     Serial.println("시작 버튼 눌림 감지!");
     sendResponseToMaster(RESP_START_BUTTON_PRESSED);
-    playEffectSound(SFX_LIGHT_ON); // 버튼 눌림 효과음
+    playEffectSound(SFX_LIGHT_ON);
+    delay(200); // 디바운싱
   }
 
   lastStartButtonState = currentStartButtonState;
@@ -846,6 +878,23 @@ void processSerialCommands() {
       stopAllMotors();
       setMCP23017Output(MCP23017_1_ADDR, MCP_GPIOA, 0x00);
       setMCP23017Output(MCP23017_2_ADDR, MCP_GPIOA, 0x00);
+    } else if (command == "i2c_scan") {
+      Serial.println(F("=== I2C 스캔 ==="));
+      for (uint8_t addr = 1; addr < 127; addr++) {
+        Wire.beginTransmission(addr);
+        uint8_t error = Wire.endTransmission();
+        if (error == 0) {
+          Serial.print(F("장치 발견: 0x"));
+          Serial.println(addr, HEX);
+        }
+      }
+    } else if (command == "mcp_test") {
+      Serial.println(F("=== MCP23017 테스트 ==="));
+      uint8_t gpiob = readMCP23017Input(MCP23017_1_ADDR, MCP_GPIOB);
+      Serial.print(F("GPIOB 상태: 0x"));
+      Serial.println(gpiob, HEX);
+      Serial.print(F("Start 버튼 (bit2): "));
+      Serial.println((gpiob & (1 << START_BUTTON_BIT)) ? F("HIGH") : F("LOW"));
     }
   }
 }

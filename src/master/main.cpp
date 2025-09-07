@@ -441,7 +441,7 @@ void handleGameStartPhase() {
   Serial.println("=== 게임 시작 ===");
   playAudio(10);
   startCeilingLightSequence();
-  transitionToPhase(PHASE_GAME_START);
+  // 천정 조명 시퀀스가 완료되면 자동으로 다음 단계로 진행됨
 }
 
 void handleRobotTurnFrontPhase() {
@@ -683,6 +683,9 @@ void processSerialCommands() {
       printGameStatus();
     } else if (command == "reset") {
       initializeGameState();
+    } else if (command == "test_start") {
+      Serial.println("시작 버튼 테스트 - Slave에게 상태 요청");
+      sendCommandToSlave(0x50, 0, 0); // 상태 요청 명령
     }
   }
 }
@@ -695,5 +698,11 @@ void printGameStatus() {
   Serial.println(gameState.currentLevel);
   Serial.print("점수: ");
   Serial.println(gameState.currentScore);
+  Serial.println("사용 가능한 명령어:");
+  Serial.println("- start: 게임 시작");
+  Serial.println("- stop: 게임 중지");
+  Serial.println("- status: 상태 확인");
+  Serial.println("- reset: 상태 초기화");
+  Serial.println("- test_start: 시작 버튼 테스트");
   Serial.println("================");
 }
